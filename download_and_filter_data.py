@@ -32,6 +32,32 @@ read_csv(
     )
 """
 
+SAMPLE_COLUMNS = [
+    "Número da amostra",
+    "Região Geográfica",
+    "UF",
+    "Regional de Saúde",
+    "Município",
+    "Motivo da coleta",
+    "Tipo da Forma de Abastecimento",
+    "Nome da Forma de Abastecimento",
+    "Data da Coleta",
+    "Procedência da Coleta",
+    "Zona",
+    "Categoria Área",
+    "Área",
+]
+
+ANALYSIS_COLUMNS = [
+    "Grupo de parâmetros",
+    "Parâmetro (demais parâmetros)",
+    "LD",
+    "LQ",
+    "Resultado",
+]
+
+ALL_COLUMNS = SAMPLE_COLUMNS + ANALYSIS_COLUMNS
+
 
 def run_and_validate_query(query: str) -> pd.DataFrame:
     result = duckdb.sql(query)
@@ -41,27 +67,12 @@ def run_and_validate_query(query: str) -> pd.DataFrame:
 
 def filter_data(db):
     print("Filtering data...")
-    return run_and_validate_query(f"""
-        SELECT 
-            "Região Geográfica",
-            "UF",
-            "Regional de Saúde",
-            "Município",
-            "Motivo da coleta",
-            "Tipo da Forma de Abastecimento",
-            "Nome da Forma de Abastecimento",
-            "Data da Coleta",
-            "Procedência da Coleta",
-            "Zona",
-            "Categoria Área",
-            "Área",
-            "Grupo de parâmetros",
-            "Parâmetro (demais parâmetros)",
-            "LD",
-            "LQ",
-            "Resultado",
+    query = f"""
+        SELECT {", ".join([f'"{c}"' for c in  ALL_COLUMNS])}
+
         FROM {db}
-    """)
+    """
+    return run_and_validate_query(query)
 
 
 def get_parameters(db):
@@ -81,11 +92,34 @@ def get_parameters(db):
     """)
 
 
+def separate_samples_and_analyses(data: pd.DataFrame):
+    print("Separating samples and analyses...")
+
+    samples = data[SAMPLE_COLUMNS].drop_duplicates().copy()
+    samples.insert(0, "ID da amostra", range(1, len(samples) + 1))
+
+    analyses = data.merge(
+        samples,
+        on=SAMPLE_COLUMNS,
+        how="left",
+        validate="many_to_one",
+    )
+    samples = samples.drop(columns=["Número da amostra"])
+    analyses.insert(
+        0,
+        "ID da leitura",
+        range(1, len(analyses) + 1),
+    )
+    analyses = analyses[["ID da leitura", "ID da amostra", *ANALYSIS_COLUMNS]]
+
+    return samples, analyses
+
+
 data = filter_data(DB)
 
 print("Saving filtered data...")
 filtered_csv_path = CSV_PATH.with_suffix(".filtered.csv")
-data.to_csv(
+data.drop("Número da amostra", axis=1).to_csv(
     filtered_csv_path,
     index=False,
     sep=";",
@@ -103,9 +137,18 @@ parameters.to_csv(
     encoding="utf-8",
 )
 
+samples, analyses = separate_samples_and_analyses(data)
+
+samples_csv_path = CSV_PATH.with_name("split_amostras.csv")
+analyses_csv_path = CSV_PATH.with_name("split_leituras.csv")
+samples.to_csv(samples_csv_path, index=False, sep=";", encoding="utf-8")
+analyses.to_csv(analyses_csv_path, index=False, sep=";", encoding="utf-8")
+
 
 ZIP_PATH.unlink(missing_ok=True)
 CSV_PATH.unlink(missing_ok=True)
 
 print("Filtered data saved to:", filtered_csv_path.absolute())
 print("Parameters summary saved to:", parameters_csv_path.absolute())
+print("Split water samples data was saved to:", samples_csv_path.absolute())
+print("Split individual analysis data was saved to:", analyses_csv_path.absolute())
