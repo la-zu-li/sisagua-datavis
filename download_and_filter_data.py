@@ -32,32 +32,56 @@ read_csv(
     )
 """
 
-print("Filtering data...")
-query = duckdb.sql(f"""
+
+def run_and_validate_query(query: str) -> pd.DataFrame:
+    result = duckdb.sql(query)
+    assert result is not None, "Query failed to execute."
+    return result.df()
+
+
+def filter_data(db):
+    print("Filtering data...")
+    return run_and_validate_query(f"""
+        SELECT 
+            "Região Geográfica",
+            "UF",
+            "Regional de Saúde",
+            "Município",
+            "Motivo da coleta",
+            "Tipo da Forma de Abastecimento",
+            "Nome da Forma de Abastecimento",
+            "Data da Coleta",
+            "Procedência da Coleta",
+            "Zona",
+            "Categoria Área",
+            "Área",
+            "Grupo de parâmetros",
+            "Parâmetro (demais parâmetros)",
+            "LD",
+            "LQ",
+            "Resultado",
+        FROM {db}
+    """)
+
+
+def get_parameters(db):
+    print("Getting parameters summary...")
+    return run_and_validate_query(f"""
     SELECT 
-        "Região Geográfica",
-        "UF",
-        "Regional de Saúde",
-        "Município",
-        "Motivo da coleta",
-        "Tipo da Forma de Abastecimento",
-        "Nome da Forma de Abastecimento",
-        "Data da Coleta",
-        "Procedência da Coleta",
-        "Zona",
-        "Categoria Área",
-        "Área",
         "Grupo de parâmetros",
         "Parâmetro (demais parâmetros)",
-        "LD",
-        "LQ",
-        "Resultado",
-    FROM {DB}
-""")
+        COUNT(*) AS "Número de registros"
+    FROM "{db}"
+    GROUP BY
+        "Grupo de parâmetros",
+        "Parâmetro (demais parâmetros)"
+    ORDER BY
+        "Grupo de parâmetros",
+        "Parâmetro (demais parâmetros)"
+    """)
 
-assert query is not None, "Query failed to execute."
-data: pd.DataFrame = query.df()
 
+data = filter_data(DB)
 
 print("Saving filtered data...")
 filtered_csv_path = CSV_PATH.with_suffix(".filtered.csv")
@@ -68,7 +92,20 @@ data.to_csv(
     encoding="utf-8",
 )
 
+parameters = get_parameters(filtered_csv_path)
+
+print("Saving parameters summary...")
+parameters_csv_path = CSV_PATH.with_name("parameters.csv")
+parameters.to_csv(
+    parameters_csv_path,
+    index=False,
+    sep=";",
+    encoding="utf-8",
+)
+
+
 ZIP_PATH.unlink(missing_ok=True)
 CSV_PATH.unlink(missing_ok=True)
 
 print("Filtered data saved to:", filtered_csv_path.absolute())
+print("Parameters summary saved to:", parameters_csv_path.absolute())
