@@ -38,6 +38,7 @@ SAMPLE_COLUMNS = [
     "UF",
     "Regional de Saúde",
     "Município",
+    "Código IBGE",
     "Motivo da coleta",
     "Tipo da Forma de Abastecimento",
     "Nome da Forma de Abastecimento",
@@ -105,12 +106,8 @@ def separate_samples_and_analyses(data: pd.DataFrame):
         validate="many_to_one",
     )
     samples = samples.drop(columns=["Número da amostra"])
-    analyses.insert(
-        0,
-        "ID da leitura",
-        range(1, len(analyses) + 1),
-    )
-    analyses = analyses[["ID da leitura", "ID da amostra", *ANALYSIS_COLUMNS]]
+
+    analyses = analyses[["ID da amostra", *ANALYSIS_COLUMNS]]
 
     return samples, analyses
 
@@ -122,7 +119,6 @@ filtered_csv_path = CSV_PATH.with_suffix(".filtered.csv")
 data.drop("Número da amostra", axis=1).to_csv(
     filtered_csv_path,
     index=False,
-    sep=";",
     encoding="utf-8",
 )
 
@@ -133,7 +129,6 @@ parameters_csv_path = CSV_PATH.with_name("parameters.csv")
 parameters.to_csv(
     parameters_csv_path,
     index=False,
-    sep=";",
     encoding="utf-8",
 )
 
@@ -141,12 +136,12 @@ samples, analyses = separate_samples_and_analyses(data)
 
 samples_csv_path = CSV_PATH.with_name("split_amostras.csv")
 analyses_csv_path = CSV_PATH.with_name("split_leituras.csv")
-samples.to_csv(samples_csv_path, index=False, sep=";", encoding="utf-8")
-analyses.to_csv(analyses_csv_path, index=False, sep=";", encoding="utf-8")
+samples.to_csv(samples_csv_path, index=False, encoding="utf-8")
+analyses.to_csv(analyses_csv_path, index=False, encoding="utf-8")
 
 
 ZIP_PATH.unlink(missing_ok=True)
-CSV_PATH.unlink(missing_ok=True)
+# CSV_PATH.unlink(missing_ok=True)
 
 print("Filtered data saved to:", filtered_csv_path.absolute())
 print("Parameters summary saved to:", parameters_csv_path.absolute())
