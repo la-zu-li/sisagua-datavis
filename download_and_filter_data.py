@@ -114,6 +114,12 @@ def separate_samples_and_analyses(data: pd.DataFrame):
 
 data = filter_data(DB)
 
+# Remove unwanted whitespace
+data["Parâmetro (demais parâmetros)"] = data[
+    "Parâmetro (demais parâmetros)"
+].str.strip()
+
+
 print("Saving filtered data...")
 filtered_csv_path = CSV_PATH.with_suffix(".filtered.csv")
 data.drop("Número da amostra", axis=1).to_csv(
