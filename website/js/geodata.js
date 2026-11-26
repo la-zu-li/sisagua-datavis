@@ -4,7 +4,7 @@ import { BRAZILLIAN_STATES_LIST } from "./constants.js";
 const raw_jsons = await Promise.all(
   BRAZILLIAN_STATES_LIST.map((name) => {
     /** @type {Promise<MunicipalitiesGeoJSON>}*/
-    const json = window.d3.json(`data/${name}.min.json`);
+    const json = window.d3.json(`data/geodata/minified/${name}.min.json`);
     return json;
   }),
 );
