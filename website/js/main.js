@@ -1,3 +1,7 @@
+import { filterSamples } from "./data.js";
+import { tipoDeAbastecimentoChart } from "./charts.js";
+import { options } from "./vega-config.js";
+import { filterGeoData } from "./geodata.js";
 const colors = [
   "#03045e",
   "#262d79",
@@ -19,6 +23,20 @@ const aguaTexts = document.querySelectorAll(".agua");
 aguaTexts.forEach((element) =>
   element.addEventListener("click", (e) => {
     const color = cycleColorAndReturn();
-    e.target.style.backgroundColor = color;
+    if (e.target instanceof HTMLElement) {
+      e.target.style.backgroundColor = color;
+    }
   }),
 );
+
+filterSamples("CE", "2025", "2027");
+filterGeoData("CE");
+const chartSpec = tipoDeAbastecimentoChart().toSpec();
+
+window
+  .vegaEmbed("#chart", chartSpec, options)
+  .then((result) => {
+    console.log("CHART LOADED!");
+    // console.log(result);
+  })
+  .catch(console.error);
