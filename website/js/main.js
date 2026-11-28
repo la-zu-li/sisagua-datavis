@@ -1,4 +1,4 @@
-import { filterSamples } from "./data.js";
+import { filterSamples, setAggDataFormaAbastecimento } from "./data.js";
 import { tipoDeAbastecimentoChart } from "./charts.js";
 import { options } from "./vega-config.js";
 import { filterGeoData } from "./geodata.js";
@@ -30,6 +30,7 @@ aguaTexts.forEach((element) =>
 );
 
 filterSamples("CE", "2025", "2027");
+setAggDataFormaAbastecimento();
 filterGeoData("CE");
 const chartSpec = tipoDeAbastecimentoChart().toSpec();
 
@@ -37,6 +38,6 @@ window
   .vegaEmbed("#chart", chartSpec, options)
   .then((result) => {
     console.log("CHART LOADED!");
-    // console.log(result);
+    console.log(result);
   })
   .catch(console.error);

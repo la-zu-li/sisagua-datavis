@@ -20,10 +20,10 @@ export const stateGeoFeatures = Object.fromEntries(
   ]),
 );
 
-export const filteredGeoFeatures = allFeatureLists.flat();
+export let filteredGeoFeatures = allFeatureLists.flat();
 
 export function filterGeoData(uf) {
-  return stateGeoFeatures[uf];
+  return (filteredGeoFeatures = stateGeoFeatures[uf]);
 }
 
 function signedArea(ring) {
